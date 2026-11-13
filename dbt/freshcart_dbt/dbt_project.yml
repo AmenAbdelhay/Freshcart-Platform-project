@@ -35,3 +35,6 @@ models:
     silver:
       +schema: silver
       +materialized: incremental
+    gold:
+      +schema: gold
+      +materialized: incremental

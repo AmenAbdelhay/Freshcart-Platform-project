@@ -1,10 +1,4 @@
 --بسم الله
-select *
-from {{ source('freshcart', 'stores') }}
-
-/*
--- بسم الله
-
 {{
     config(
         materialized='incremental',
@@ -22,4 +16,3 @@ where updated_at > (
     from {{ this }}
 )
 {% endif %}
-*/

@@ -1,0 +1,21 @@
+--بسم الله
+{{
+    config(
+        materialized='incremental',
+        incremental_strategy='delete+insert'
+    )
+}}
+
+select 
+* 
+from {{ source('freshcart' , 'product_prices') }}
+
+{% if is_incremental() %}
+where updated_at > (
+    select coalesce(max(updated_at), '1900-01-01'::timestamp)
+    from {{ this }}
+)
+{% endif %}
+
+
+
