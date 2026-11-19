@@ -71,8 +71,8 @@ services:
 
 
   # ---------------------------------------------------------------- YOUR PLATFORM STARTS HERE
-
-  warehouse:                                  #warehouse
+#-------------------------------------Warehouse---------------------------
+  warehouse:                                  
     image: postgres:16
     environment:
       POSTGRES_USER: fresh_wh
@@ -83,6 +83,7 @@ services:
     volumes:
       - wh_data:/var/lib/postgresql/data
 
+#-------------------------------------DBT---------------------------
   dbt:
     build:
       context: ./dbt
@@ -97,6 +98,56 @@ services:
       - ./dbt/profiles:/root/.dbt:ro
     depends_on:
       - warehouse
+
+#-------------------------------------AIRFLOW---------------------------
+  airflow:
+    image: apache/airflow:3.1.5
+    container_name: freshcart-airflow
+    restart: unless-stopped
+
+    command: standalone
+
+    environment:
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+
+      PROD_HOST: source-db
+      PROD_PORT: "5432"
+
+      WAREHOUSE_HOST: warehouse
+      WAREHOUSE_PORT: "5432"
+
+      FX_API_URL: http://fx-api:8000
+
+      SUPPLIERS_DIR: /opt/airflow/suppliers
+
+      # Gmail SMTP Configuration
+      AIRFLOW__SMTP__SMTP_HOST: smtp.gmail.com
+      AIRFLOW__SMTP__SMTP_PORT: "587"
+      AIRFLOW__SMTP__SMTP_STARTTLS: "True"
+      AIRFLOW__SMTP__SMTP_SSL: "False"
+      AIRFLOW__SMTP__SMTP_USER: ${AIRFLOW_SMTP_USER}
+      AIRFLOW__SMTP__SMTP_PASSWORD: ${AIRFLOW_SMTP_PASSWORD}
+      AIRFLOW__SMTP__SMTP_MAIL_FROM: ${AIRFLOW_SMTP_USER}
+      AIRFLOW_CONN_SMTP_DEFAULT: "smtp://${AIRFLOW_SMTP_USER}:${AIRFLOW_SMTP_PASSWORD}@smtp.gmail.com:587"
+      AIRFLOW_ALERT_EMAIL: ${AIRFLOW_ALERT_EMAIL}
+
+      # Airflow Email Backend
+      AIRFLOW__EMAIL__EMAIL_BACKEND: airflow.utils.email.send_email_smtp
+
+    ports:
+      - "8080:8080"
+
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./etl:/opt/airflow/etl:ro
+      - ./source_files/suppliers:/opt/airflow/suppliers:ro
+      - ./.env:/opt/airflow/.env:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+
+
 
 volumes:
   source_db_data:

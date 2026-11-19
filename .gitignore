@@ -22,3 +22,6 @@ dbt/logs/
 .venv/
 __pycache__/
 *.pyc
+
+# Airflow
+airflow/logs/
